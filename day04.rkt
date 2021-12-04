@@ -66,19 +66,12 @@
 
 (define part2
   (let-values ([(numbers boards) (read-data)])
-    (for*/fold ([res #f]
-                [completed null]
-                #:result res)
+    (for*/fold ([res #f])
                ([n (in-list numbers)]
-                [b (in-list boards)])
-      (cond
-        [(memq b completed)
-         (values res completed)]
-        [else
-         (board-mark! b n)
-         (if (board-complete? b)
-             (values (* n (board-score b)) (cons b completed))
-             (values res completed))]))))
+                [b (in-list boards)]
+                #:unless (board-complete? b))
+      (board-mark! b n)
+      (* n (board-score b)))))
 
 (module+ test
   (require rackunit)
