@@ -5,56 +5,32 @@
 (struct line (x1 y1 x2 y2)
   #:transparent)
 
-(define (horizontal-line? l) (= (line-x1 l) (line-x2 l)))
-(define (vertical-line? l)   (= (line-y1 l) (line-y2 l)))
-(define (line-direction l)
+(define (sign n)
+  (cond
+    [(= n 0) 0]
+    [(> n 0) 1]
+    [(< n 0) -1]))
+
+;; in 1d space
+(define (line-points l M [ok? (λ (_dx _dy) #t)])
   (match-define (line x1 y1 x2 y2) l)
-  (cond
-    [(and (< x2 x1) (< y2 y1)) 'nw]
-    [(and (< x2 x1) (> y2 y1)) 'sw]
-    [(and (> x2 x1) (< y2 y1)) 'ne]
-    [(and (> x2 x1) (> y2 y1)) 'se]
-    [else (raise-argument-error 'l "a diagonal line" l)]))
+  (define dx (sign (- x2 x1)))
+  (define dy (sign (- y2 y1)))
+  (if (ok? dx dy)
+      (for/list ([i (in-inclusive-range 0 (max (abs (- x2 x1))
+                                               (abs (- y2 y1))))])
+        (define x (+ x1 (* i dx)))
+        (define y (+ y1 (* i dy)))
+        (+ x (* y M)))
+      null))
 
-(define (line-points l)
-  (cond
-    [(horizontal-line? l)
-     (define x (line-x1 l))
-     (for/list ([y (in-inclusive-range
-                    (min (line-y1 l) (line-y2 l))
-                    (max (line-y1 l) (line-y2 l)))])
-       (cons x y))]
-
-    [(vertical-line? l)
-     (define y (line-y1 l))
-     (for/list ([x (in-inclusive-range
-                    (min (line-x1 l) (line-x2 l))
-                    (max (line-x1 l) (line-x2 l)))])
-       (cons x y))]
-
-    [else
-     (match-define (line x1 y1 x2 y2) l)
-     (define dir (line-direction l))
-     (define dist
-       (min
-        (abs (- x2 x1))
-        (abs (- y2 y1))))
-     (for/list ([n (in-inclusive-range 0 dist)])
-       (define nx
-         (case dir
-           [(nw sw) (- n)]
-           [(ne se) n]))
-       (define ny
-         (case dir
-           [(nw ne) (- n)]
-           [(sw se) n]))
-       (cons (+ x1 nx)
-             (+ y1 ny)))]))
-
-(define lines
+(define-values (M lines)
   (call-with-input-file "day05.txt"
     (lambda (in)
-      (for/list ([str (in-lines in)])
+      (for/fold ([M 0]
+                 [lines null]
+                 #:result (values M (reverse lines)))
+                ([str (in-lines in)])
         (match str
           [(regexp #rx"([^,]+),([^ ]+) -> ([^,]+),(.+)"
                    (list _
@@ -62,24 +38,21 @@
                          (app string->number y1)
                          (app string->number x2)
                          (app string->number y2)))
-           (line x1 y1 x2 y2)])))))
+           (values
+            (max M x1 y1 x2 y2)
+            (cons (line x1 y1 x2 y2) lines))])))))
 
-(define (count-dangerous points)
-  (for/sum ([cnt (in-hash-values points)] #:when (>= cnt 2)) 1))
-
-(define part1
-  (for/fold ([points (hash)] #:result (count-dangerous points))
-            ([l (in-list lines)]
-             #:when (or (horizontal-line? l)
-                        (vertical-line? l))
-             [p (in-list (line-points l))])
-    (hash-update points p add1 0)))
-
-(define part2
-  (for*/fold ([points (hash)] #:result (count-dangerous points))
+(define (solution points-proc)
+  (define (count-dangerous points)
+    (for/sum ([cnt (in-hash-values points)] #:when (> cnt 1)) 1))
+  (for*/fold ([points (make-hasheqv)] #:result (count-dangerous points))
              ([l (in-list lines)]
-              [p (in-list (line-points l))])
-    (hash-update points p add1 0)))
+              [p (in-list (points-proc l))])
+    (begin0 points
+      (hash-update! points p add1 0))))
+
+(define part1 (solution (λ (l) (line-points l M (λ (dx dy) (or (zero? dx) (zero? dy)))))))
+(define part2 (solution (λ (l) (line-points l M))))
 
 (module+ test
   (require rackunit)
