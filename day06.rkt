@@ -10,10 +10,11 @@
         (hash-update fish (string->number str) add1 0)))))
 
 (define (step fish)
-  (for/fold ([res (hasheqv)])
-            ([(age n) (in-hash fish)])
+  (for*/fold ([res (hasheqv)])
+             ([age (in-list (sort (hash-keys fish) <))]
+              [n (in-value (hash-ref fish age))])
     (if (zero? age)
-        (hash-set (hash-set res 8 n) 6  n)
+        (hash-set (hash-set res 8 n) 6 n)
         (hash-update res (sub1 age) (λ (v) (+ v n)) 0))))
 
 (define (interp fish n)
