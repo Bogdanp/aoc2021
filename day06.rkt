@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/string)
+(require racket/string
+         "nstime.rkt")
 
 (define the-fish
   (call-with-input-file "day06.txt"
@@ -23,8 +24,8 @@
             ([_ (in-range n)])
     (step fish)))
 
-(define part1 (interp the-fish 80))
-(define part2 (interp the-fish 256))
+(define part1 (nstime (interp the-fish 80)))
+(define part2 (nstime (interp the-fish 256)))
 
 (module+ test
   (require rackunit)
