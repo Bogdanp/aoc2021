@@ -11,8 +11,9 @@
 
 (define (step fish)
   (for*/fold ([res (hasheqv)])
-             ([age (in-list (sort (hash-keys fish) <))]
-              [n (in-value (hash-ref fish age))])
+             ([age (in-inclusive-range 0 8)]
+              [n (in-value (hash-ref fish age #f))]
+              #:when n)
     (if (zero? age)
         (hash-set (hash-set res 8 n) 6 n)
         (hash-update res (sub1 age) (λ (v) (+ v n)) 0))))
