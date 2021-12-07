@@ -11,9 +11,9 @@
   (for*/fold ([costs (hasheqv)])
              ([target-pos (in-inclusive-range 0 (apply max poss))]
               [source-pos (in-list poss)])
-    (hash-update costs target-pos (λ (v) (+ v (cost-proc target-pos source-pos))) 0)))
+    (hash-update costs target-pos (λ (v) (+ v (cost-proc (abs (- target-pos source-pos))))) 0)))
 
-(define (solution poss [cost-proc (λ (t s) (abs (- t s)))])
+(define (solution poss [cost-proc values])
   (for/fold ([res #f] [fuel +inf.0] #:result fuel)
             ([(pos cost) (in-hash (compute-costs poss cost-proc))])
     (if (< cost fuel)
@@ -21,13 +21,7 @@
         (values res fuel))))
 
 (define part1 (time (solution positions)))
-(define part2 (time (solution positions
-                              (let ([memo (make-hasheqv)])
-                                (λ (t s)
-                                  (define d (abs (- t s)))
-                                  (hash-ref! memo d (λ ()
-                                                      (for/sum ([s (in-inclusive-range 1 d)])
-                                                        s))))))))
+(define part2 (time (solution positions (λ (d) (* d (add1 d) 1/2)))))
 
 (module+ test
   (require rackunit)
