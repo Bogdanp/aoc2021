@@ -14,6 +14,19 @@
             (map string->list (string-split input))
             (map string->list (string-split output)))])))))
 
+(define segments-to-digits
+  (hash
+   '(#\a #\b #\c #\e #\f #\g) 0
+   '(#\c #\f) 1
+   '(#\a #\c #\d #\e #\g) 2
+   '(#\a #\c #\d #\f #\g) 3
+   '(#\b #\c #\d #\f) 4
+   '(#\a #\b #\d #\f #\g) 5
+   '(#\a #\b #\d #\e #\f #\g) 6
+   '(#\a #\c #\f) 7
+   '(#\a #\b #\c #\d #\e #\f #\g) 8
+   '(#\a #\b #\c #\d #\f #\g) 9))
+
 (define (simple-digit cs)
   (case (length cs)
     [(2) 1]
@@ -24,17 +37,7 @@
 
 (define (digit cs)
   (hash-ref
-   (hash
-    '(#\a #\b #\c #\e #\f #\g) 0
-    '(#\c #\f) 1
-    '(#\a #\c #\d #\e #\g) 2
-    '(#\a #\c #\d #\f #\g) 3
-    '(#\b #\c #\d #\f) 4
-    '(#\a #\b #\d #\f #\g) 5
-    '(#\a #\b #\d #\e #\f #\g) 6
-    '(#\a #\c #\f) 7
-    '(#\a #\b #\c #\d #\e #\f #\g) 8
-    '(#\a #\b #\c #\d #\f #\g) 9)
+   segments-to-digits
    (remove-duplicates (sort cs char<?))
    #f))
 
@@ -97,7 +100,7 @@
     (let loop ([candidates candidates])
       (cond
         [(andmap (λ (ds) (= (length ds) 1)) (hash-values candidates))
-         (for/hash ([(cs cands) (in-hash candidates)])
+         (for/hasheqv ([(cs cands) (in-hash candidates)])
            (values (car cands) cs))]
         [else
          (define exact-matches
