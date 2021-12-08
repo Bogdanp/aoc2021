@@ -44,11 +44,9 @@
      (define digits
        (for/list ([cs (in-list (cadr d))])
          (index-of mapping cs)))
-     (define number
-       (for/sum ([d (in-list digits)]
-                 [e (in-range (sub1 (length digits)) -1 -1)])
-         (* d (expt 10 e))))
-     number)))
+     (for/sum ([d (in-list (reverse digits))]
+               [e (in-naturals 0)])
+       (* d (expt 10 e))))))
 
 (module+ test
   (require rackunit)
