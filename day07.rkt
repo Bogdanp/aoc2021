@@ -5,7 +5,7 @@
 (define positions
   (call-with-input-file "day07.txt"
     (lambda (in)
-      (map string->number (string-split (read-line in) "," #:repeat? #t)))))
+      (map string->number (string-split (read-line in) ",")))))
 
 (define (compute-costs poss cost-proc)
   (for*/fold ([costs (hasheqv)])
