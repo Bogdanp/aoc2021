@@ -7,23 +7,19 @@
     (lambda (in)
       (for/fold ([octopi (hash)])
                 ([line (in-lines in)]
-                 [i (in-naturals)])
+                 [row (in-naturals)])
         (for/fold ([octopi octopi])
                   ([c (in-string line)]
-                   [j (in-naturals)])
-          (hash-set octopi (cons i j) (string->number (string c))))))))
+                   [col (in-naturals)])
+          (hash-set octopi (cons row col) (string->number (string c))))))))
 
 (define (adjacent-positions pos)
-  (define i (car pos))
-  (define j (cdr pos))
-  `((,(sub1 i) . ,(sub1 j))
-    (,(sub1 i) . ,j)
-    (,(sub1 i) . ,(add1 j))
-    (,i . ,(sub1 j))
-    (,i . ,(add1 j))
-    (,(add1 i) . ,(sub1 j))
-    (,(add1 i) . ,j)
-    (,(add1 i) . ,(add1 j))))
+  (define row (car pos))
+  (define col (cdr pos))
+  (for*/list ([row* (in-inclusive-range (sub1 row) (add1 row))]
+              [col* (in-inclusive-range (sub1 col) (add1 col))]
+              #:unless (and (= row row*) (= col col*)))
+    (cons row* col*)))
 
 (define (step octopi)
   (define flashed (mutable-set))
@@ -46,25 +42,22 @@
         (values flashed-octopi (add1 flashes))))
     (if (> new-flashes 0)
         (loop new-octopi (+ flashes new-flashes))
-        (values new-octopi flashes (= (set-count flashed)
-                                      (hash-count octopi))))))
+        (values new-octopi flashes))))
 
 (define part1
   (time
    (for/fold ([octopi data] [flashes 0] #:result flashes)
              ([_ (in-range 100)])
-     (define-values (new-octopi new-flashes _all-flashed?)
-       (step octopi))
+     (define-values (new-octopi new-flashes) (step octopi))
      (values new-octopi (+ flashes new-flashes)))))
 
 (define part2
   (time
    (for/fold ([octopi data] [all-step #f] #:result all-step)
              ([step-num (in-naturals 1)])
-     (define-values (new-octopi _ all-flashed?)
-       (step octopi))
-     #:final all-flashed?
-     (values new-octopi (and all-flashed? step-num)))))
+     (define-values (new-octopi flashes) (step octopi))
+     #:final (= flashes (hash-count octopi))
+     (values new-octopi step-num))))
 
 (module+ test
   (require rackunit)
