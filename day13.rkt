@@ -25,36 +25,30 @@
 (define (fold ds instr)
   (define proc
     (match instr
-      [`(col ,col-num) (λ (row col) (if (< col col-num) (cons row col) (cons row (- col-num (- col col-num)))))]
-      [`(row ,row-num) (λ (row col) (if (< row row-num) (cons row col) (cons (- row-num (- row row-num)) col)))]))
+      [`(col ,fc) (λ (r c) (cons r (if (< c fc) c (- fc (- c fc)))))]
+      [`(row ,fr) (λ (r c) (cons (if (< r fr) r (- fr (- r fr))) c))]))
   (for/hash ([(pos v) (in-hash ds)])
     (define row (car pos))
     (define col (cdr pos))
     (values (proc row col) v)))
 
-(define part1
-  (time
-   (hash-count (fold dots (car folds)))))
+(define (interp ds instrs)
+  (for/fold ([ds ds])
+            ([instr (in-list instrs)])
+    (fold ds instr)))
 
 (define (display-dots ds)
-  (define mr (add1 (apply max (map car (hash-keys ds)))))
-  (define mc (add1 (apply max (map cdr (hash-keys ds)))))
-  (for ([row (in-range mr)])
-    (for ([col (in-range mc)])
+  (for ([row (in-inclusive-range 0 (apply max (map car (hash-keys ds))))])
+    (for ([col (in-inclusive-range 0 (apply max (map cdr (hash-keys ds))))])
       (define pos (cons row col))
       (if (hash-has-key? ds pos)
           (display #\#)
           (display #\.)))
     (newline)))
 
-(define part2
-  (time
-   (with-output-to-string
-     (lambda ()
-       (display-dots
-        (for/fold ([ds dots])
-                  ([instr (in-list folds)])
-          (fold ds instr)))))))
+(define part1 (time (hash-count (fold dots (car folds)))))
+(define part2 (time (with-output-to-string
+                      (λ () (display-dots (interp dots folds))))))
 
 (module+ test
   (require rackunit)
