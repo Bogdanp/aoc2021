@@ -23,21 +23,14 @@
       (values dots folds))))
 
 (define (fold ds instr)
-  (match instr
-    [`(col ,col-num)
-     (for/hash ([(pos v) (in-hash ds)])
-       (define row (car pos))
-       (define col (cdr pos))
-       (if (< col col-num)
-           (values pos v)
-           (values (cons row (- col-num (- col col-num))) v)))]
-    [`(row ,row-num)
-     (for/hash ([(pos v) (in-hash ds)])
-       (define row (car pos))
-       (define col (cdr pos))
-       (if (< row row-num)
-           (values pos v)
-           (values (cons (- row-num (- row row-num)) col) v)))]))
+  (define proc
+    (match instr
+      [`(col ,col-num) (λ (row col) (if (< col col-num) (cons row col) (cons row (- col-num (- col col-num)))))]
+      [`(row ,row-num) (λ (row col) (if (< row row-num) (cons row col) (cons (- row-num (- row row-num)) col)))]))
+  (for/hash ([(pos v) (in-hash ds)])
+    (define row (car pos))
+    (define col (cdr pos))
+    (values (proc row col) v)))
 
 (define part1
   (time
