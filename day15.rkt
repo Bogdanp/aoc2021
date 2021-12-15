@@ -28,8 +28,8 @@
   (list
    (- pos stride)
    (+ pos stride)
-   (if (< (modulo pos stride) stride) (add1 pos) -1)
-   (if (> (modulo pos stride) 0)      (sub1 pos) -1)))
+   (if (< (modulo pos stride) (sub1 stride)) (add1 pos) -1)
+   (if (> (modulo pos stride) 0)             (sub1 pos) -1)))
 
 (define (a* start goal stride cost)
   (define candidates (make-heap (λ (a b) (< (cdr a) (cdr b)))))
