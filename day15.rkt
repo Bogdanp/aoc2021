@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list)
+(require data/heap)
 
 (define-values (grid M)
   (call-with-input-file "day15.txt"
@@ -31,65 +31,34 @@
    (if (< (modulo pos stride) stride) (add1 pos) -1)
    (if (> (modulo pos stride) 0)      (sub1 pos) -1)))
 
-(define (remove-index lst idx)
-  (append (take lst idx)
-          (drop lst (add1 idx))))
-
-(define (insert-candidate xs x-scores v v-score)
-  (let loop ([xs xs]
-             [x-scores x-scores]
-             [ys null]
-             [y-scores null])
-    (cond
-      [(null? xs)
-       (values
-        (reverse (cons v ys))
-        (reverse (cons v-score y-scores)))]
-      [else
-       (define x (car xs))
-       (define x-score (car x-scores))
-       (if (< v-score x-score)
-           (values
-            (append (reverse ys) (cons v xs))
-            (append (reverse y-scores) (cons v-score x-scores)))
-           (loop (cdr xs) (cdr x-scores) (cons x ys) (cons x-score y-scores)))])))
-
 (define (a* start goal stride cost)
+  (define candidates (make-heap (λ (a b) (< (cdr a) (cdr b)))))
+  (heap-add! candidates (cons start 0))
   (define from (make-hasheqv))
   (define g-score (make-hasheqv `((,start . 0))))
   (define f-score (make-hasheqv `((,start . 0))))
-  (let loop ([candidates (list start)]
-             [candidate-scores (list 0)])
-    (when (null? candidates)
+  (let loop ()
+    (when (zero? (heap-count candidates))
       (error 'a* "failed to find a path"))
-    (define current (car candidates))
+    (define current (car (heap-min candidates)))
     (cond
       [(= current goal)
        (let path-loop ([path (list current)] [current current])
          (define next (hash-ref from current #f))
          (if next (path-loop (cons next path) next) path))]
       [else
-       (define-values (new-candidates new-candidate-scores)
-         (for/fold ([candidates (remv current candidates)]
-                    [candidate-scores (remove-index candidate-scores (index-of candidates current))])
-                   ([neighbor (in-list (moves current stride))])
-           (define t-score (+ (hash-ref g-score current)
-                              (+ (cost neighbor)
-                                 (cost current))))
-           (cond
-             [(>= t-score (hash-ref g-score neighbor +inf.0))
-              (values candidates candidate-scores)]
-             [else
-              (define s (+ t-score (cost neighbor)))
-              (hash-set! from neighbor current)
-              (hash-set! g-score neighbor t-score)
-              (hash-set! f-score neighbor s)
-              (cond
-                [(memv neighbor candidates)
-                 (values candidates candidate-scores)]
-                [else
-                 (insert-candidate candidates candidate-scores neighbor s)])])))
-       (loop new-candidates new-candidate-scores)])))
+       (heap-remove-min! candidates)
+       (for ([neighbor (in-list (moves current stride))])
+         (define t-score (+ (hash-ref g-score current)
+                            (+ (cost neighbor)
+                               (cost current))))
+         (when (< t-score (hash-ref g-score neighbor +inf.0))
+           (define s (+ t-score (cost neighbor)))
+           (hash-set! from neighbor current)
+           (hash-set! g-score neighbor t-score)
+           (hash-set! f-score neighbor s)
+           (heap-add! candidates (cons neighbor s))))
+       (loop)])))
 
 (define (total-risk path h)
   (for/sum ([pos (in-list (cdr path))])
